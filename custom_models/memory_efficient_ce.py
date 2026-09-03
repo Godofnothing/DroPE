@@ -7,8 +7,6 @@ hidden states and LM-head weights directly to an efficient linear CE kernel.
 
 from types import MethodType
 
-import torch
-
 
 def _make_qwen3_5_loss_only_forward(linear_cross_entropy):
     # Importing here keeps normal installations usable without optional kernels.
@@ -47,10 +45,10 @@ def _make_qwen3_5_loss_only_forward(linear_cross_entropy):
 
 
 def apply_memory_efficient_ce(model, implementation: str):
-    """Install one of ``baseline``, ``cce``, ``liger``, or ``quack``.
+    """Install one of ``baseline``, ``cce``, or ``liger``.
 
-    Qwen 3.5 is supported by Liger's public model patch.  CCE and Quack expose
-    linear-loss APIs, so they share the small Qwen-specific adapter above.
+    Qwen 3.5 is supported by Liger's public model patch. CCE uses the
+    small Qwen-specific linear-loss adapter above.
     """
     implementation = implementation.lower()
     if implementation == "baseline":
@@ -64,31 +62,18 @@ def apply_memory_efficient_ce(model, implementation: str):
         )
         return model
 
-    if not hasattr(model, "_drope_original_forward"):
-        model._drope_original_forward = model.forward
-    if implementation == "cce":
-        from cut_cross_entropy import linear_cross_entropy
-
-        def cce_loss(hidden_states, weight, labels):
-            return linear_cross_entropy(hidden_states, weight, labels, shift=1)
-        model.forward = MethodType(_make_qwen3_5_loss_only_forward(cce_loss), model)
-    elif implementation == "quack":
-        from quack.linear_cross_entropy import chunked_linear_cross_entropy
-
-        def quack_loss(hidden_states, weight, labels):
-            # Quack's TMA path needs a multiple of eight rows.  The causal
-            # shift leaves 32767 rows for this run, so append one ignored row.
-            x = hidden_states[:, :-1].reshape(-1, hidden_states.shape[-1])
-            target = labels[:, 1:].reshape(-1)
-            padding = (-x.shape[0]) % 8
-            if padding:
-                x = torch.cat((x, x.new_zeros((padding, x.shape[-1]))))
-                target = torch.cat((target, target.new_full((padding,), -100)))
-            return chunked_linear_cross_entropy(x, weight, target, chunk_size=4096)
-        model.forward = MethodType(_make_qwen3_5_loss_only_forward(quack_loss), model)
-    else:
+    if implementation != "cce":
         raise ValueError(
-            "memory_efficient_ce must be baseline, cce, liger, or quack; "
+            "memory_efficient_ce must be baseline, cce, or liger; "
             f"got {implementation!r}"
         )
+
+    if not hasattr(model, "_drope_original_forward"):
+        model._drope_original_forward = model.forward
+    from cut_cross_entropy import linear_cross_entropy
+
+    def cce_loss(hidden_states, weight, labels):
+        return linear_cross_entropy(hidden_states, weight, labels, shift=1)
+
+    model.forward = MethodType(_make_qwen3_5_loss_only_forward(cce_loss), model)
     return model

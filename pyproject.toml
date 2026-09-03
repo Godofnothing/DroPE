@@ -17,14 +17,15 @@ dependencies = [
   "liger-kernel>=0.6",
   "matplotlib>=3.10.0",
   "peft>=0.17.0",
-  "quack-kernels",
   "ray[serve]>=2.49.0",
   "scikit-learn>=1.7.0",
   "tensorboard>=2.18.0",
   "torch>=2.8.0",
   "transformers>=5.2.0,<6",
   "trl>=0.23.1",
-  "wandb>=0.21.0",
+  "yandex-underdeep",
+  "yandex-yt",
+  "yandex-snooper",
 ]
 
 [project.optional-dependencies]
@@ -40,7 +41,9 @@ flash-attn = { TORCH_CUDA_ARCH_LIST = "8.0 9.0", FLASH_ATTN_CUDA_ARCHS = "80;90"
 [tool.uv.sources]
 torch = { index = "pytorch-cu128" }
 cut-cross-entropy = { git = "https://github.com/apple/ml-cross-entropy.git" }
-quack-kernels = { git = "https://github.com/Dao-AILab/quack.git" }
+yandex-underdeep = { index = "yandex-team" }
+yandex-yt = { index = "yandex-team" }
+yandex-snooper = { index = "yandex-team" }
 
 [tool.uv.extra-build-dependencies]
 flash-attn = ["torch"]
@@ -48,4 +51,9 @@ flash-attn = ["torch"]
 [[tool.uv.index]]
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "yandex-team"
+url = "https://pypi.yandex-team.ru/simple"
 explicit = true

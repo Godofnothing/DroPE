@@ -44,10 +44,11 @@ the architecture lists in `pyproject.toml` when building for different GPUs.
 Add `--extra inference` if you also need vLLM. `./scripts/install.sh` remains as a
 small wrapper around `uv sync`, so the same extra flags work with it.
 
-2) (Optional) Login to Hugging Face and W&B:
+2) (Optional) Login to Hugging Face. To enable Underdeep logging, set
+   `underdeep_enabled=true` and provide an Underdeep token:
 ```bash
 uv run hf auth login     # if you need gated datasets/models
-uv run wandb login       # if you want online logging
+export UNDERDEEP_TOKEN=...  # if you want Underdeep logging
 ```
 
 ### Interlude (hydra)

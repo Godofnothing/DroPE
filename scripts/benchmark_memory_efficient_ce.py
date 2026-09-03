@@ -19,7 +19,7 @@ from custom_models.memory_efficient_ce import apply_memory_efficient_ce
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("implementation", choices=("baseline", "cce", "liger", "quack"))
+    parser.add_argument("implementation", choices=("baseline", "cce", "liger"))
     parser.add_argument("--steps", type=int, default=10)
     parser.add_argument("--sequence-length", type=int, default=32768)
     args = parser.parse_args()

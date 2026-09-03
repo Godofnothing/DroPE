@@ -24,15 +24,16 @@ vllm_mode: "colocate"
 # logging:
 logging_strategy: steps
 logging_steps: 5
-report_to: "wandb"
-wandb_project: rl4lm
-wandb_group_name: ${data_log_name}/${model_log_name}
-wandb_run_name: ${trainer_log_name}
+report_to: "none"
+underdeep_enabled: false
+underdeep_project: rl4lm
+underdeep_experiment: ${data_log_name}/${model_log_name}
+underdeep_run_name: ${trainer_log_name}
 
 # dirs:
 results_dir: results
 exp_name: ${now:%Y.%m.%d}${now:%H%M%S}
-output_dir: ${results_dir}/${wandb_group_name}/${wandb_run_name}/${exp_name}
+output_dir: ${results_dir}/${underdeep_experiment}/${underdeep_run_name}/${exp_name}
 
 call_post_training: null
 
@@ -44,4 +45,3 @@ seed: 42
 hydra:
   run:
     dir: ${output_dir}
-

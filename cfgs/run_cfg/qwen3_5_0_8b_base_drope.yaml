@@ -27,8 +27,8 @@ learning_rate: 1e-4
 save_steps: 100
 lr_scheduler_type: cosine
 
-wandb_project: drope-qwen3-5
-wandb_run_name: ${trainer_log_name}_${model_log_name}_${max_steps}steps_bs${train_batch_size}_lr${learning_rate}
+underdeep_project: drope-qwen3-5
+underdeep_run_name: ${trainer_log_name}_${model_log_name}_${max_steps}steps_bs${train_batch_size}_lr${learning_rate}
 
 trainer_args:
   warmup_steps: 100

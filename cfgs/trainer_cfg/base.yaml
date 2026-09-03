@@ -62,7 +62,7 @@ trainer_args:
   save_strategy: ${save_strategy}
   save_steps: ${save_steps}
   report_to: ${report_to}
-  run_name: ${wandb_run_name}
+  run_name: ${underdeep_run_name}
   bf16: ${bf16}
   tf32: ${tf32}
   torch_compile: ${torch_compile}

@@ -19,8 +19,8 @@ max_seq_length: 4096
 max_steps: 5000
 learning_rate: 1e-4
 
-wandb_project: drope-llama2
-wandb_run_name: ${trainer_log_name}_${model_log_name}_${max_steps}steps_bs${train_batch_size}_lr${learning_rate}
+underdeep_project: drope-llama2
+underdeep_run_name: ${trainer_log_name}_${model_log_name}_${max_steps}steps_bs${train_batch_size}_lr${learning_rate}
 
 per_device_train_batch_size: 1
 
