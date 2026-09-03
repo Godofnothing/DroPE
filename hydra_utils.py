@@ -5,7 +5,6 @@ import torch
 import transformers
 from omegaconf import DictConfig
 from transformers import AutoConfig
-from trl import ModelConfig
 
 from dataclasses import dataclass, field
 from typing import Optional
@@ -59,6 +58,8 @@ def load_model(
         from_pretrained=False,
         custom_class=None,
         drope: bool = False,
+        trust_remote_code: bool = False,
+        memory_efficient_ce: str = "baseline",
 ):
     # load models overrinding the default huggingface configuration with
     # custom parameters
@@ -67,11 +68,9 @@ def load_model(
     if isinstance(config, DictConfig):
         config = hydra.utils.instantiate(config)
 
-    torch_dtype = (
-        model_args.torch_dtype
-        if model_args.torch_dtype in ["auto", None]
-        else getattr(torch, model_args.torch_dtype)
-    )
+    dtype = model_args.dtype
+    if isinstance(dtype, str) and dtype != "auto":
+        dtype = getattr(torch, dtype)
     attn_implementation = model_args.attn_implementation
     if drope:
         custom_class = get_class(custom_class)
@@ -79,9 +78,9 @@ def load_model(
             model_args.model_name_or_path,
             config=config,
             revision=model_args.model_revision,
-            trust_remote_code=model_args.trust_remote_code,
+            trust_remote_code=trust_remote_code,
             attn_implementation=attn_implementation,
-            torch_dtype=torch_dtype,
+            dtype=dtype,
         )
     elif from_pretrained:
         assert model_args.model_name_or_path is not None, (
@@ -94,8 +93,8 @@ def load_model(
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
             revision=model_args.model_revision,
-            trust_remote_code=model_args.trust_remote_code,
-            dtype=torch_dtype,
+            trust_remote_code=trust_remote_code,
+            dtype=dtype,
             attn_implementation=attn_implementation,
         )
     else:
@@ -113,12 +112,15 @@ def load_model(
             model_class = transformers.AutoModelForCausalLM
             model = model_class.from_config(
                 config,
-                trust_remote_code=model_args.trust_remote_code,
-                dtype=torch_dtype,
+                trust_remote_code=trust_remote_code,
+                dtype=dtype,
                 attn_implementation=attn_implementation,
             )
         n_params = sum({p.data_ptr(): p.numel()
                        for p in model.parameters()}.values())
         print(
             f"Training new model from scratch - Total size={n_params / 2**20:.2f}M params")
+    if memory_efficient_ce != "baseline":
+        from custom_models.memory_efficient_ce import apply_memory_efficient_ce
+        model = apply_memory_efficient_ce(model, memory_efficient_ce)
     return model

@@ -1,21 +1,22 @@
 model_log_name:
 model_name_or_path:
 tokenizer_name_or_path: ${model_name_or_path}
+model_trust_remote_code: true
 
 model_args:
   _target_: hydra_utils.trl.ModelConfig
   model_name_or_path: ${model_name_or_path}
-  trust_remote_code: true
   use_peft: ${use_peft}
   load_in_4bit: ${load_in_4bit}
 
 use_peft: false
 load_in_4bit: false
+memory_efficient_ce: baseline
 model_custom_config: null
 # other available options (for reference)
 
 # model_revision: "main"
-# torch_dtype: null
+# dtype: null
 # attn_implementation: null
 # use_peft: false
 # lora_r: 16
@@ -33,7 +34,7 @@ model_custom_config: null
 tokenizer:
   _target_: hydra_utils.transformers.AutoTokenizer.from_pretrained
   pretrained_model_name_or_path: ${tokenizer_name_or_path}
-  trust_remote_code: true
+  trust_remote_code: ${model_trust_remote_code}
   
 force_override_pad_token: false
 make_tokenizer_fn:

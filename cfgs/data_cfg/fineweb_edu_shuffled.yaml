@@ -13,6 +13,7 @@ trust_remote_code: true
 streaming: true
 load_dataset_kwargs: null
 data_skip_samples: null
+max_train_samples: null
 manually_add_eos: true
 mask_past_sequences: false
 
@@ -28,6 +29,7 @@ make_dataset_fn:
   do_eval: ${do_eval} 
   load_dataset_kwargs: ${load_dataset_kwargs}
   skip_samples: ${data_skip_samples}
+  max_train_samples: ${max_train_samples}
   preprocessing_num_workers: ${data_preprocessing_num_workers}
   attention_implementation: ${model_args.attn_implementation}
   mask_past_sequences: ${mask_past_sequences}

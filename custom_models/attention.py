@@ -15,6 +15,8 @@ from transformers.models.qwen2.modeling_qwen2 import (
     eager_attention_forward as qwen2_eager_attention_forward,
     apply_rotary_pos_emb as qwen2_apply_rotary_pos_emb,
 )
+from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5Attention
+from transformers.models.qwen3_5_moe.modeling_qwen3_5_moe import Qwen3_5MoeAttention
 
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS, sdpa_attention_forward
 
@@ -159,7 +161,7 @@ def llama_qk_norm_nope_attn_forward(
     hidden_states: torch.Tensor,
     position_embeddings: tuple[torch.Tensor, torch.Tensor],
     attention_mask: Optional[torch.Tensor],
-    past_key_value: Optional = None,
+    past_key_values: Optional = None,
     cache_position: Optional[torch.LongTensor] = None,
     type: str = "qk",
     **kwargs: Any,
@@ -191,16 +193,14 @@ def llama_qk_norm_nope_attn_forward(
         query_states, key_states, cos, sin
     )
 
-    if past_key_value is not None:
-        # sin and cos are specific to RoPE models; cache_position needed for the static cache
-        cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
-        key_states, value_states = past_key_value.update(
-            key_states, value_states, self.layer_idx, cache_kwargs
+    if past_key_values is not None:
+        key_states, value_states = past_key_values.update(
+            key_states, value_states, self.layer_idx
         )
 
-    attention_interface: Callable = llama_eager_attention_forward
-    if self.config._attn_implementation != "eager":
-        attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
+    attention_interface: Callable = ALL_ATTENTION_FUNCTIONS.get_interface(
+        self.config._attn_implementation, llama_eager_attention_forward
+    )
 
     attn_output, attn_weights = attention_interface(
         self,
@@ -231,7 +231,7 @@ def qwen2_qk_norm_nope_attn_forward(
     hidden_states: torch.Tensor,
     position_embeddings: tuple[torch.Tensor, torch.Tensor],
     attention_mask: Optional[torch.Tensor],
-    past_key_value: Optional[Any] = None,
+    past_key_values: Optional[Any] = None,
     cache_position: Optional[torch.LongTensor] = None,
     type: str = "qk",
     **kwargs: Any,
@@ -263,16 +263,14 @@ def qwen2_qk_norm_nope_attn_forward(
         query_states, key_states, cos, sin
     )
 
-    if past_key_value is not None:
-        # sin and cos are specific to RoPE models; cache_position needed for the static cache
-        cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
-        key_states, value_states = past_key_value.update(
-            key_states, value_states, self.layer_idx, cache_kwargs
+    if past_key_values is not None:
+        key_states, value_states = past_key_values.update(
+            key_states, value_states, self.layer_idx
         )
 
-    attention_interface: Callable = qwen2_eager_attention_forward
-    if self.config._attn_implementation != "eager":
-        attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
+    attention_interface: Callable = ALL_ATTENTION_FUNCTIONS.get_interface(
+        self.config._attn_implementation, qwen2_eager_attention_forward
+    )
 
     attn_output, attn_weights = attention_interface(
         self,
@@ -301,6 +299,8 @@ def qwen2_k_norm_nope_attn_forward(self, *args, **kwargs):
 
 NoPELlamaAttention = nope(LlamaAttention)
 NoPEQwen2Attention = nope(Qwen2Attention)
+NoPEQwen3_5Attention = nope(Qwen3_5Attention)
+NoPEQwen3_5MoeAttention = nope(Qwen3_5MoeAttention)
 
 QKNormNoPELlamaAttention = qk_norm(LlamaAttention, llama_qk_norm_nope_attn_forward)
 QNormNoPELlamaAttention = qk_norm(LlamaAttention, llama_q_norm_nope_attn_forward)

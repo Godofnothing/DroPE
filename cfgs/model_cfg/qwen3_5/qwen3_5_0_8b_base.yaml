@@ -1,10 +1,9 @@
 defaults:
   - base
-  - _self_ 
+  - _self_
 
-model_log_name: smollm2v1p7b
-model_name_or_path: HuggingFaceTB/SmolLM2-1.7B
-force_override_pad_token: true
+model_log_name: qwen3_5_0_8b_base
+model_name_or_path: Qwen/Qwen3.5-0.8B-Base
 
 model_args:
   model_revision: main

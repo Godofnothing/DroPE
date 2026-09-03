@@ -9,6 +9,18 @@ from transformers.models.qwen2.modeling_qwen2 import (
     Qwen2Attention,
     Qwen2Config,
 )
+from transformers.models.qwen3_5.modeling_qwen3_5 import (
+    Qwen3_5Attention,
+    Qwen3_5ForConditionalGeneration,
+)
+from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5Config
+from transformers.models.qwen3_5_moe.modeling_qwen3_5_moe import (
+    Qwen3_5MoeAttention,
+    Qwen3_5MoeForConditionalGeneration,
+)
+from transformers.models.qwen3_5_moe.configuration_qwen3_5_moe import (
+    Qwen3_5MoeConfig,
+)
 from custom_models.attention import (
     NoPELlamaAttention,
     NoPEQwen2Attention,
@@ -18,6 +30,8 @@ from custom_models.attention import (
     QKNormNoPEQwen2Attention,
     QNormNoPEQwen2Attention,
     KNormNoPEQwen2Attention,
+    NoPEQwen3_5Attention,
+    NoPEQwen3_5MoeAttention,
 )
 
 import logging
@@ -28,6 +42,8 @@ logger = logging.getLogger(__name__)
 MODEL_ARCH_MAP = {
     LlamaForCausalLM: (LlamaAttention, LlamaConfig),
     Qwen2ForCausalLM: (Qwen2Attention, Qwen2Config),
+    Qwen3_5ForConditionalGeneration: (Qwen3_5Attention, Qwen3_5Config),
+    Qwen3_5MoeForConditionalGeneration: (Qwen3_5MoeAttention, Qwen3_5MoeConfig),
 }
 
 # Map of attention variants for each base attention class
@@ -44,6 +60,10 @@ ATTENTION_VARIANTS = {
         "q_norm_nope": QNormNoPEQwen2Attention,
         "k_norm_nope": KNormNoPEQwen2Attention,
     },
+    # Qwen3.5 already applies QK normalization in its full-attention layers.
+    # Its Gated DeltaNet layers do not use RoPE and are intentionally untouched.
+    Qwen3_5Attention: {"nope": NoPEQwen3_5Attention},
+    Qwen3_5MoeAttention: {"nope": NoPEQwen3_5MoeAttention},
 }
 
 
@@ -126,6 +146,9 @@ def _create_drope_model_class(
 
             # The actual model architecture is often in a `.model` attribute
             model_core = getattr(self, self.base_model_prefix)
+            # Multimodal Qwen 3.5 checkpoints wrap the decoder under
+            # ``model.language_model`` even for text-only base checkpoints.
+            model_core = getattr(model_core, "language_model", model_core)
 
             for i, layer in enumerate(model_core.layers):
                 # The attention module is usually named 'self_attn'
@@ -138,7 +161,7 @@ def _create_drope_model_class(
                         logger.debug(
                             f"Replaced attention in layer {i} with {new_attn.__class__.__name__}"
                         )
-                else:
+                elif not hasattr(layer, "linear_attn"):
                     logger.warning(
                         f"Could not find 'self_attn' in layer {i} of {self.__class__.__name__}"
                     )
@@ -208,6 +231,21 @@ def _create_drope_config_class(
 
 DroPEQwen2Config = _create_drope_config_class(Qwen2Config, attention_type="nope")
 DroPELlamaConfig = _create_drope_config_class(LlamaConfig, attention_type="nope")
+DroPEQwen3_5Config = _create_drope_config_class(
+    Qwen3_5Config, attention_type="nope"
+)
+DroPEQwen3_5MoeConfig = _create_drope_config_class(
+    Qwen3_5MoeConfig, attention_type="nope"
+)
 
 DroPEQwen2ForCausalLM = _create_drope_model_class(Qwen2ForCausalLM)
 DroPELlamaForCausalLM = _create_drope_model_class(LlamaForCausalLM)
+# Keep the public names used by existing run configs. The actual checkpoint
+# architecture is ConditionalGeneration; its forward method also supports
+# ordinary text-only causal language-model training.
+DroPEQwen3_5ForCausalLM = _create_drope_model_class(
+    Qwen3_5ForConditionalGeneration
+)
+DroPEQwen3_5MoeForCausalLM = _create_drope_model_class(
+    Qwen3_5MoeForConditionalGeneration
+)

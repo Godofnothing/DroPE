@@ -1,0 +1,51 @@
+[project]
+name = "drope"
+version = "0.1.0"
+description = "Extend pretrained LLM context by dropping positional embeddings"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "accelerate>=1.10.1",
+  "bitsandbytes>=0.47.0",
+  "cut-cross-entropy",
+  "datasets>=4.0.0",
+  "deepspeed>=0.16.9",
+  "evaluate>=0.4.5",
+  "hf-transfer>=0.1.9",
+  "huggingface-hub>=0.34.0",
+  "hydra-core==1.3.2",
+  "liger-kernel>=0.6",
+  "matplotlib>=3.10.0",
+  "peft>=0.17.0",
+  "quack-kernels",
+  "ray[serve]>=2.49.0",
+  "scikit-learn>=1.7.0",
+  "tensorboard>=2.18.0",
+  "torch>=2.8.0",
+  "transformers>=5.2.0,<6",
+  "trl>=0.23.1",
+  "wandb>=0.21.0",
+]
+
+[project.optional-dependencies]
+gpu = ["flash-attn>=2.8.3"]
+inference = ["vllm>=0.10.2"]
+
+[tool.uv]
+package = false
+
+[tool.uv.extra-build-variables]
+flash-attn = { TORCH_CUDA_ARCH_LIST = "8.0 9.0", FLASH_ATTN_CUDA_ARCHS = "80;90", GPU_ARCHS = "80;90", NVCC_APPEND_FLAGS = "-gencode arch=compute_80,code=sm_80 -gencode arch=compute_90,code=sm_90 -O3", FLASH_ATTENTION_SKIP_BENCHMARK_BUILD = "1", CFLAGS = "-Ofast -march=native -flto -funroll-loops", CXXFLAGS = "-Ofast -march=native -flto -funroll-loops", MAX_JOBS = "16", NVCC_THREADS = "8" }
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+cut-cross-entropy = { git = "https://github.com/apple/ml-cross-entropy.git" }
+quack-kernels = { git = "https://github.com/Dao-AILab/quack.git" }
+
+[tool.uv.extra-build-dependencies]
+flash-attn = ["torch"]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

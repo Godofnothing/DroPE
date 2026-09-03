@@ -1,0 +1,34 @@
+defaults:
+  - override /trainer_cfg@_global_: base_trainer
+  - override /model_cfg@_global_: qwen3_5/qwen3_5_0_8b_base
+  - override /data_cfg@_global_: fineweb_edu_shuffled
+  - _self_
+
+custom_class: custom_models.drope.DroPEQwen3_5ForCausalLM
+from_pretrained: true
+drope: true
+
+# CCE is the selected loss-only LM head.  It avoids the [batch, seq, vocab]
+# logits allocation; `tf32: null` avoids a Torch 2.11 incompatibility between
+# TrainingArguments' legacy TF32 flag and CCE's precision query.
+memory_efficient_ce: cce
+tf32: null
+
+model_custom_config:
+  _target_: custom_models.drope.DroPEQwen3_5Config.from_pretrained
+  pretrained_model_name_or_path: ${model_name_or_path}
+  attention_type: nope
+
+train_batch_size: 512
+per_device_train_batch_size: 1
+max_seq_length: 32768
+max_steps: 5000
+learning_rate: 1e-4
+save_steps: 100
+lr_scheduler_type: cosine
+
+wandb_project: drope-qwen3-5
+wandb_run_name: ${trainer_log_name}_${model_log_name}_${max_steps}steps_bs${train_batch_size}_lr${learning_rate}
+
+trainer_args:
+  warmup_steps: 100

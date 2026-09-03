@@ -22,17 +22,32 @@ This repository provides the code for the paper [Extending the Context of Pretra
 
 ### Installation
 
-1) Create environment (Python 3.10+ recommended, tested with Python 3.11) and install deps:
+1) Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then create the
+project environment and install its locked dependencies:
 ```bash
-conda create -n drope python=3.11 -y && conda activate drope
-pip install --upgrade pip
-./scripts/install.sh
+uv sync
 ```
+
+The project supports Python 3.11 and 3.12. PyTorch is installed from its CUDA 12.8
+index. To install FlashAttention for the supplied GPU training configurations, use:
+
+```bash
+uv sync --extra gpu
+```
+
+FlashAttention source builds use at most 16 parallel jobs and eight NVCC threads,
+and generate kernels for CUDA compute capabilities 8.0 and 9.0 (`sm_80` and
+`sm_90`). The package-scoped uv build configuration also skips benchmark
+compilation and applies the configured host and CUDA optimization flags. Update
+the architecture lists in `pyproject.toml` when building for different GPUs.
+
+Add `--extra inference` if you also need vLLM. `./scripts/install.sh` remains as a
+small wrapper around `uv sync`, so the same extra flags work with it.
 
 2) (Optional) Login to Hugging Face and W&B:
 ```bash
-huggingface-cli login    # if you need gated datasets/models
-wandb login              # if you want online logging
+uv run hf auth login     # if you need gated datasets/models
+uv run wandb login       # if you want online logging
 ```
 
 ### Interlude (hydra)
@@ -44,10 +59,10 @@ This project uses [Hydra](https://hydra.cc/) for configuration management. Hydra
 
 Our models follow HuggingFace's model loading API. For example, to load a DroPE model, you can use the following code:
 ```bash
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained('SakanaAI/Llama-2-7b-hf-DroPE', trust_remote_code=True)
-model = AutoModel.from_pretrained('SakanaAI/Llama-2-7b-hf-DroPE', trust_remote_code=True, torch_dtype=torch.bfloat16)
+model = AutoModelForCausalLM.from_pretrained('SakanaAI/Llama-2-7b-hf-DroPE', trust_remote_code=True, dtype=torch.bfloat16)
 ```
 
 Inference is then straightforward:
@@ -66,8 +81,14 @@ Recalibrate a pretrained model to a DroPE model. Currently, the repo contains tr
   - [SmolLM-1.7B](https://huggingface.co/HuggingFaceTB/SmolLM-1.7B)
   - [SmolLM-2-1.7B](https://huggingface.co/HuggingFaceTB/SmolLM-2.1-1.7B)
   - [LLaMA-2-7B](https://huggingface.co/meta-llama/Llama-2-7b-hf)
+  - [Qwen3.5-9B](https://huggingface.co/Qwen/Qwen3.5-9B)
 
-To add a new training config, create a new run-config in `cfgs/run_cfg/`. You can use the existing configs as a template and override the desired settings such as the model, dataset, training hyperparameters, etc. To add support for a new model, add the model to the `MODEL_ARCH_MAP` in `custom_models/drope.py` and create a new model config in `cfg/model_cfg/`.
+To add a new training config, create a new run-config in `cfgs/run_cfg/`. You can use the existing configs as a template and override the desired settings such as the model, dataset, training hyperparameters, etc. To add support for a new model, add the model to the `MODEL_ARCH_MAP` in `custom_models/drope.py` and create a new model config in `cfgs/model_cfg/`.
+
+Qwen3.5 dense and MoE causal-language-model classes are supported. Qwen3.5 uses a
+hybrid stack, so DroPE removes RoPE from its full-attention layers while leaving
+the Gated DeltaNet layers unchanged. A ready-to-run dense-model example is provided
+in `cfgs/run_cfg/qwen3_5_9b_drope.yaml`.
 
 ### Launching a training run
 
@@ -94,6 +115,12 @@ You can pass Hydra overrides after the first three arguments. E.g.:
   train_batch_size=512 \
   per_device_train_batch_size=32 \
   max_steps=120000
+```
+
+For example, launch the Qwen3.5 configuration with:
+
+```bash
+./launch.sh 8 qwen3_5_9b_drope.yaml zero1
 ```
 
 ### Troubleshooting

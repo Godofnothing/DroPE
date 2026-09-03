@@ -7,7 +7,7 @@ model_name_or_path: meta-llama/Llama-2-7b-hf
 
 model_args:
   model_revision: main
-  torch_dtype: float16
+  dtype: float16
   attn_implementation: flash_attention_2
 
 tokenizer:

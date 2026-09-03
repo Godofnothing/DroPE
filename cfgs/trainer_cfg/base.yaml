@@ -55,7 +55,8 @@ trainer_args:
   max_grad_norm: ${max_grad_norm}
   lr_scheduler_type: ${lr_scheduler_type}
   lr_scheduler_kwargs: ${lr_scheduler_kwargs}
-  warmup_ratio: ${warmup_ratio}
+  # Transformers 5 removed warmup_ratio; warmup_steps accepts either an
+  # absolute step count or a ratio in [0, 1).
   logging_strategy: ${logging_strategy}
   logging_steps: ${logging_steps}
   save_strategy: ${save_strategy}
@@ -73,8 +74,7 @@ trainer_args:
   eval_steps: ${eval_steps}
 
 trainer:
-  _target_: 
+  _target_:
   model: ${model_name_or_path}
   # should not be specified here but instantiated separately
   args: ${trainer_args}
-  

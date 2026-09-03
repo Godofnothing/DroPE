@@ -369,13 +369,19 @@ def load_pretraining_dataset(
     if do_train and "train" in lm_ds:
         train_ds = lm_ds["train"]
         if max_train_samples is not None:
-            sz = min(len(train_ds), max_train_samples)
-            train_ds = train_ds.select(range(sz))
+            if streaming:
+                train_ds = train_ds.take(max_train_samples)
+            else:
+                sz = min(len(train_ds), max_train_samples)
+                train_ds = train_ds.select(range(sz))
     if do_eval and "validation" in lm_ds:
         eval_ds = lm_ds["validation"]
         if max_eval_samples is not None:
-            sz = min(len(eval_ds), max_eval_samples)
-            eval_ds = eval_ds.select(range(sz))
+            if streaming:
+                eval_ds = eval_ds.take(max_eval_samples)
+            else:
+                sz = min(len(eval_ds), max_eval_samples)
+                eval_ds = eval_ds.select(range(sz))
 
     if do_train:
         def preprocess_logits_for_metrics(logits, labels):

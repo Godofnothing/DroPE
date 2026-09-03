@@ -40,8 +40,7 @@ extra_args=("${args[@]:2}")
 RND_PORT=$(($RANDOM % 1000 + 12000))
 echo $RND_PORT
 
-accelerate launch --num_processes "$nproc" \
+uv run accelerate launch --num_processes "$nproc" \
   --main_process_port "$RND_PORT" \
   --config_file "$config" \
   train.py run_cfg@_global_="$arg2" "${extra_args[@]}"
-
